@@ -1,11 +1,48 @@
-node {
-    docker.image('node:16-buster-slim').inside('-p 3000:3000') {
-        stage('Build') {
-            sh 'npm install'
-        }
 
+pipeline {
+    agent {
+        docker {
+            image 'node:16.13.0'
+            args "-p 3000:3000"
+        }
+    }
+    environment {
+        CI = 'true'
+    }
+    stages {
+        stage('Build') {
+            steps {
+                sh 'yarn install'
+                sh 'yarn build'
+            }
+        }
         stage('Test') {
-            sh './jenkins/scripts/test.sh'
+            steps {
+                sh './jenkins/scripts/test.sh'
+            }
+        }
+        stage('Manual Approval') {
+            steps {
+                script {
+                    def userInput = input(
+                        message: 'Lanjutkan ke tahap Deploy?',
+                        parameters: [choice(choices: ['Yes'], description: 'Choose an option', name: 'CONTINUE')]
+                    )
+                    if (userInput == 'Yes') {
+                        echo 'Continuing with deployment...'
+                    } else {
+                        echo 'Deployment aborted.'
+                        sh './jenkins/scripts/kill.sh'
+                    }
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh './jenkins/scripts/deliver.sh'
+                sh 'sleep 60'
+                sh './jenkins/scripts/kill.sh'
+            }
         }
     }
 }
