@@ -41,7 +41,7 @@ pipeline {
             steps {
                 sh './jenkins/scripts/deliver.sh'
                 sh 'sleep 60'
-                //sh './jenkins/scripts/kill.sh'
+                sh './jenkins/scripts/kill.sh'
             }
         }
     }
